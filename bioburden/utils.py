@@ -268,6 +268,8 @@ class ExcelImporter:
                 except Exception as e:
                     self.errors.append(f"RAW DATA row {index + 2}: {str(e)}")
             
+            if self.records_imported > 0:
+                self.warnings.append(f"✓ Imported {self.records_imported} bioburden test records")
             return True
             
         except Exception as e:
