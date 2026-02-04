@@ -368,4 +368,4 @@ class ExcelImporter:
                 'errors': self.errors,
                 'warnings': self.warnings
             }
-        }
+
