@@ -4,8 +4,34 @@
 
 {% block content %}
 <div class="mb-4">
-    <h2><i class="fas fa-file-upload"></i> Import Bioburden Data</h2>
-    <p class="text-muted">Upload Excel files to import bioburden test data and fixed thresholds</p>
+    <h2><i class="fas fa-file-upload"></i> Import Bioburden Data from Excel</h2>
+    <p class="text-muted">Upload Excel files to import bioburden test data, lot information, organism identification, and fixed thresholds</p>
+</div>
+
+<!-- Import Stats Overview -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> What Gets Imported</h5>
+            <p>The system automatically detects and imports data from multiple Excel sheets:</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li><strong>RAW DATA</strong> - Bioburden test results (CFU measurements)</li>
+                        <li><strong>LOT_MASTER</strong> - Lot details with organism identification</li>
+                        <li><strong>ALERT_ACTION LEVELS</strong> - Fixed alert/action thresholds</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>All testing areas automatically created</li>
+                        <li>Status calculated automatically (🟢 🟠 🔴)</li>
+                        <li>Statistical analysis data prepared</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -20,57 +46,153 @@
                     
                     <div class="mb-3">
                         <label for="{{ form.uploaded_file.id_for_label }}" class="form-label">
-                            Excel File (.xlsx, .xls)
+                            <i class="fas fa-file-excel"></i> Excel File (.xlsx, .xls)
                         </label>
                         {{ form.uploaded_file }}
                         <div class="form-text">
-                            Select an Excel file containing bioburden data
+                            <i class="fas fa-lightbulb"></i> Select your bioburden Excel file with multiple sheets
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <label for="{{ form.imported_by.id_for_label }}" class="form-label">
-                            Imported By (Optional)
+                            <i class="fas fa-user"></i> Imported By (Optional)
                         </label>
                         {{ form.imported_by }}
                     </div>
                     
+                    <div class="alert alert-warning">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Important:</strong>
+                        This will clear existing data before importing. Make sure you have a backup if needed.
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary btn-lg w-100">
-                        <i class="fas fa-upload"></i> Upload & Import
+                        <i class="fas fa-upload"></i> Upload & Import Data
                     </button>
                 </form>
             </div>
         </div>
         
         <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Expected Format</h5>
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-check-circle"></i> What Happens After Import</h5>
             </div>
             <div class="card-body">
-                <h6>Bioburden Data Sheet:</h6>
-                <ul class="small">
-                    <li><strong>Lot</strong> - Lot number</li>
-                    <li><strong>Area</strong> - Testing area</li>
-                    <li><strong>Test Date</strong> or <strong>Date</strong> - Test date</li>
-                    <li><strong>CFU</strong> or <strong>CFU Count</strong> - Colony count</li>
-                    <li><strong>Dilution</strong> (optional) - Dilution factor</li>
-                    <li><strong>Sample ID</strong> (optional)</li>
-                    <li><strong>Laboratory</strong> (optional)</li>
-                    <li><strong>Analyst</strong> (optional)</li>
-                </ul>
-                
-                <h6 class="mt-3">Thresholds Sheet (optional):</h6>
-                <ul class="small">
-                    <li><strong>Lot</strong> - Lot number</li>
-                    <li><strong>Alert Level</strong> or <strong>Alert</strong> - Orange threshold</li>
-                    <li><strong>Action Level</strong> or <strong>Action</strong> - Red threshold</li>
-                    <li><strong>Area</strong> (optional)</li>
-                </ul>
+                <div class="timeline">
+                    <div class="mb-3">
+                        <strong>1. Data Extraction</strong>
+                        <p class="text-muted mb-1">System reads all sheets and identifies data</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>2. Validation</strong>
+                        <p class="text-muted mb-1">Checks for required columns and data format</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>3. Import Process</strong>
+                        <p class="text-muted mb-1">Creates lots, areas, tests, and thresholds</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>4. Status Calculation</strong>
+                        <p class="text-muted mb-1">Compares CFU values against alert/action levels</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>5. Analysis Ready</strong>
+                        <p class="text-muted mb-1">All statistical features become available:</p>
+                        <ul class="small mb-0">
+                            <li>Outlier detection</li>
+                            <li>Organism frequency analysis</li>
+                            <li>CFU per area statistics</li>
+                            <li>Z-score analysis</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Expected Excel Format</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="formatAccordion">
+                    <!-- RAW DATA -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#rawDataFormat">
+                                <i class="fas fa-database"></i> &nbsp; RAW DATA Sheet
+                            </button>
+                        </h2>
+                        <div id="rawDataFormat" class="accordion-collapse collapse show" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <strong>Required Columns:</strong>
+                                <ul class="small">
+                                    <li><code>LOT VECTOR</code> - Lot number</li>
+                                    <li><code>AREA TESTED</code> - Testing area name</li>
+                                    <li><code>DATE</code> - Test date</li>
+                                    <li><code>CFU AEROBES S1-S10</code> - Aerobe samples</li>
+                                    <li><code>CFU FUNGI S1-S10</code> - Fungi samples (optional)</li>
+                                </ul>
+                                <strong>Optional Columns:</strong>
+                                <ul class="small mb-0">
+                                    <li><code>CORRECTION FACTOR</code> - Dilution factor</li>
+                                    <li><code>PROVIDER</code> - Laboratory name</li>
+                                    <li><code>VALIDATION</code> - Validation status</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- LOT_MASTER -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lotMasterFormat">
+                                <i class="fas fa-boxes"></i> &nbsp; LOT_MASTER Sheet
+                            </button>
+                        </h2>
+                        <div id="lotMasterFormat" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <strong>Required Columns:</strong>
+                                <ul class="small">
+                                    <li><code>LOT VECTOR</code> - Lot number</li>
+                                </ul>
+                                <strong>Optional Columns:</strong>
+                                <ul class="small mb-0">
+                                    <li><code>DATE PRODUCTION</code> - Production date</li>
+                                    <li><code>PRIMARY_ORGANISM</code> - Main organism identified</li>
+                                    <li><code>SECONDARY_ORGANISM</code> - Second organism</li>
+                                    <li><code>TERTIARY_ORGANISM</code> - Third organism</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ALERT_ACTION LEVELS -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#thresholdFormat">
+                                <i class="fas fa-exclamation-triangle"></i> &nbsp; ALERT_ACTION LEVELS Sheet
+                            </button>
+                        </h2>
+                        <div id="thresholdFormat" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <strong>Required Columns:</strong>
+                                <ul class="small mb-0">
+                                    <li><code>ALERT LEVEL FIXED</code> - Orange threshold value</li>
+                                    <li><code>ACTION LEVEL FIXED</code> - Red threshold value</li>
+                                    <li><code>DATE PERIOD</code> - Period identifier</li>
+                                </ul>
+                                <p class="small text-muted mb-0 mt-2">
+                                    <i class="fas fa-info-circle"></i> System uses the most recent (last row) threshold values
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-header bg-white">
                 <h5 class="mb-0"><i class="fas fa-history"></i> Recent Imports</h5>
@@ -90,7 +212,7 @@
                         {% for import_record in recent_imports %}
                         <tr>
                             <td>
-                                <small>{{ import_record.file_name|truncatechars:30 }}</small>
+                                <small><i class="fas fa-file-excel text-success"></i> {{ import_record.file_name|truncatechars:30 }}</small>
                             </td>
                             <td>
                                 <small>{{ import_record.upload_date|date:"Y-m-d H:i" }}</small>
@@ -100,11 +222,11 @@
                             </td>
                             <td>
                                 {% if import_record.status == 'completed' %}
-                                    <span class="badge bg-success">✓ Completed</span>
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Completed</span>
                                 {% elif import_record.status == 'failed' %}
-                                    <span class="badge bg-danger">✗ Failed</span>
+                                    <span class="badge bg-danger"><i class="fas fa-times"></i> Failed</span>
                                 {% elif import_record.status == 'processing' %}
-                                    <span class="badge bg-warning">⟳ Processing</span>
+                                    <span class="badge bg-warning"><i class="fas fa-spinner"></i> Processing</span>
                                 {% else %}
                                     <span class="badge bg-secondary">Pending</span>
                                 {% endif %}
@@ -112,17 +234,64 @@
                             <td>
                                 <a href="{% url 'bioburden:import_detail' import_record.pk %}" 
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="fas fa-eye"></i> Details
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted">No imports yet</td>
+                            <td colspan="5" class="text-center text-muted py-3">
+                                <i class="fas fa-inbox"></i> No imports yet - upload your first file above
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tips Section -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Import Tips & Best Practices</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-check-circle text-success"></i> Do's</h6>
+                        <ul class="small">
+                            <li>Keep original Excel column names</li>
+                            <li>Ensure dates are in proper format</li>
+                            <li>Include all required sheets</li>
+                            <li>Check data for consistency</li>
+                            <li>Use .xlsx or .xls format</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-times-circle text-danger"></i> Don'ts</h6>
+                        <ul class="small">
+                            <li>Don't rename critical columns</li>
+                            <li>Don't leave required fields empty</li>
+                            <li>Don't modify sheet names</li>
+                            <li>Don't use CSV format</li>
+                            <li>Don't import partial data</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-question-circle text-info"></i> Troubleshooting</h6>
+                        <ul class="small">
+                            <li>Check import details for errors</li>
+                            <li>Verify Excel file isn't corrupted</li>
+                            <li>Ensure all sheets exist</li>
+                            <li>Check for special characters</li>
+                            <li>Contact support if issues persist</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

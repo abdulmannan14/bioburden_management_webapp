@@ -282,6 +282,40 @@ last_test = BioburdenData.objects.order_by('-test_date').first()
 if first_test and last_test:
     print(f"\n  • Date range:           {first_test.test_date} to {last_test.test_date}")
 
-print(f"\n🎯 All relevant data from Excel imported successfully!")
-print(f"   View at: http://localhost:8000")
+# Calculate additional statistics for analysis features
+print(f"\n📊 Analysis Features Ready:")
+
+# Organism diversity
+unique_organisms = set()
+for lot in Lot.objects.exclude(primary_organism__isnull=True):
+    if lot.primary_organism:
+        unique_organisms.add(lot.primary_organism)
+    if lot.secondary_organism:
+        unique_organisms.add(lot.secondary_organism)
+    if lot.tertiary_organism:
+        unique_organisms.add(lot.tertiary_organism)
+print(f"  • Unique organisms:     {len(unique_organisms)}")
+
+# Outlier detection readiness
+lots_with_enough_data = 0
+for lot in Lot.objects.all():
+    if lot.bioburden_tests.count() >= 3:
+        lots_with_enough_data += 1
+print(f"  • Lots for outlier analysis: {lots_with_enough_data} (≥3 tests)")
+
+# Statistical analysis readiness
+import numpy as np
+all_cfu = [float(t.adjusted_cfu or t.cfu_count) for t in BioburdenData.objects.all()]
+if len(all_cfu) > 0:
+    print(f"  • Mean CFU across all:  {np.mean(all_cfu):.2f}")
+    print(f"  • Std deviation:        {np.std(all_cfu):.2f}")
+    print(f"  • Min/Max CFU:          {min(all_cfu):.2f} / {max(all_cfu):.2f}")
+
+print(f"\n🎯 All data imported and ready for analysis!")
+print(f"\n📍 Available Analysis Pages:")
+print(f"   • Dashboard:            http://localhost:8000/")
+print(f"   • Outlier Analysis:     http://localhost:8000/outlier-analysis/")
+print(f"   • Organism Frequency:   http://localhost:8000/organism-frequency/")
+print(f"   • CFU per Area:         http://localhost:8000/cfu-per-area/")
+print(f"   • Statistical Summary:  http://localhost:8000/statistical-summary/")
 print("=" * 80)
