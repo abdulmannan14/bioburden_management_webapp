@@ -143,7 +143,8 @@ class ExcelImporter:
         except Exception as e:
             self.warnings.append(f"No thresholds sheet found or error: {str(e)}")
             return False
-    import_lot_master(self):
+    
+    def import_lot_master(self):
         """Import lot details with organism identification from LOT_MASTER sheet"""
         try:
             df = pd.read_excel(self.file_path, sheet_name='LOT_MASTER')
