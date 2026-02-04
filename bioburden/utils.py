@@ -367,5 +367,5 @@ class ExcelImporter:
                 'records_imported': self.records_imported,
                 'errors': self.errors,
                 'warnings': self.warnings
-                'warnings': self.warnings
+            }
         }
