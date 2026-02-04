@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Bioburden Tests - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-database"></i> Bioburden Test Data</h2>
+    <a href="{% url 'bioburden:data_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Test
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ filter_form.lot.label_tag }}
+                {{ filter_form.lot }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.area.label_tag }}
+                {{ filter_form.area }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_from.label_tag }}
+                {{ filter_form.date_from }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_to.label_tag }}
+                {{ filter_form.date_to }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Test Date</th>
+                    <th>Lot</th>
+                    <th>Area</th>
+                    <th>Sample ID</th>
+                    <th>CFU Count</th>
+                    <th>Dilution</th>
+                    <th>Adjusted CFU</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in tests %}
+                <tr>
+                    <td>{{ test.test_date|date:"Y-m-d" }}</td>
+                    <td>
+                        <a href="{% url 'bioburden:lot_detail' test.lot.pk %}">
+                            <strong>{{ test.lot.lot_number }}</strong>
+                        </a>
+                    </td>
+                    <td>{{ test.area.name }}</td>
+                    <td><small>{{ test.sample_id|default:"-" }}</small></td>
+                    <td>{{ test.cfu_count }}</td>
+                    <td>{{ test.dilution_factor }}</td>
+                    <td><strong>{{ test.adjusted_cfu|floatformat:2 }}</strong></td>
+                    <td>
+                        <span class="status-badge status-{{ test.status }}">
+                            {{ test.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'bioburden:data_update' test.pk %}" 
+                           class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        No test data found. <a href="{% url 'bioburden:import_data' %}">Import data</a> or 
+                        <a href="{% url 'bioburden:data_create' %}">add manually</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

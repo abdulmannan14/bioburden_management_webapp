@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-line"></i> Bioburden Dashboard</h2>
+    <div>
+        <a href="{% url 'bioburden:data_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Test
+        </a>
+        <a href="{% url 'bioburden:import_data' %}" class="btn btn-success">
+            <i class="fas fa-file-upload"></i> Import Data
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase">Total Tests</h6>
+                <h2 class="mb-0">{{ total_tests }}</h2>
+                <small><i class="fas fa-vial"></i> All bioburden tests</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white" style="background-color: var(--normal-color);">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase">Normal</h6>
+                <h2 class="mb-0">{{ normal_count }}</h2>
+                <small><i class="fas fa-check-circle"></i> Within limits</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white" style="background-color: var(--alert-color);">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase">Alert Level</h6>
+                <h2 class="mb-0">{{ alert_count }}</h2>
+                <small><i class="fas fa-exclamation-circle"></i> Needs attention</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white" style="background-color: var(--action-color);">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase">Action Level</h6>
+                <h2 class="mb-0">{{ action_count }}</h2>
+                <small><i class="fas fa-times-circle"></i> Immediate action</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="fas fa-filter"></i> Filters</h5>
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                {{ filter_form.lot.label_tag }}
+                {{ filter_form.lot }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.area.label_tag }}
+                {{ filter_form.area }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_from.label_tag }}
+                {{ filter_form.date_from }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_to.label_tag }}
+                {{ filter_form.date_to }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.status.label_tag }}
+                {{ filter_form.status }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="chart-container">
+            <h5><i class="fas fa-chart-pie"></i> Status Distribution</h5>
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="chart-container">
+            <h5><i class="fas fa-chart-bar"></i> Area Comparison</h5>
+            <canvas id="areaChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tests -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Tests</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Lot</th>
+                    <th>Area</th>
+                    <th>CFU Count</th>
+                    <th>Adjusted CFU</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in recent_tests %}
+                <tr>
+                    <td>{{ test.test_date|date:"Y-m-d" }}</td>
+                    <td>
+                        <a href="{% url 'bioburden:lot_detail' test.lot.pk %}">
+                            {{ test.lot.lot_number }}
+                        </a>
+                    </td>
+                    <td>{{ test.area.name }}</td>
+                    <td>{{ test.cfu_count }}</td>
+                    <td>{{ test.adjusted_cfu|floatformat:2 }}</td>
+                    <td>
+                        <span class="status-badge status-{{ test.status }}">
+                            {{ test.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'bioburden:data_update' test.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No test data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Lot Statistics -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-boxes"></i> Top Lots by Alerts</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Lot Number</th>
+                    <th>Average CFU</th>
+                    <th>Max CFU</th>
+                    <th>Alerts</th>
+                    <th>Actions</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lot in lot_stats %}
+                <tr>
+                    <td><strong>{{ lot.lot__lot_number }}</strong></td>
+                    <td>{{ lot.avg_cfu|floatformat:2 }}</td>
+                    <td>{{ lot.max_cfu|floatformat:2 }}</td>
+                    <td><span class="badge bg-warning">{{ lot.alert_count }}</span></td>
+                    <td><span class="badge bg-danger">{{ lot.action_count }}</span></td>
+                    <td>
+                        <a href="{% url 'bioburden:data_list' %}?lot={{ lot.lot__lot_number }}" class="btn btn-sm btn-outline-secondary">
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusData = {{ status_distribution|safe }};
+    
+    const statusLabels = statusData.map(item => {
+        const labels = {'normal': 'Normal', 'alert': 'Alert', 'action': 'Action'};
+        return labels[item.status] || item.status;
+    });
+    const statusCounts = statusData.map(item => item.count);
+    
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusCounts,
+                backgroundColor: ['#28a745', '#fd7e14', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Area Comparison Chart
+    const areaCtx = document.getElementById('areaChart').getContext('2d');
+    const areaData = {{ area_stats|safe }};
+    
+    const areaLabels = areaData.map(item => item.area__name);
+    const areaCounts = areaData.map(item => item.avg_cfu);
+    
+    new Chart(areaCtx, {
+        type: 'bar',
+        data: {
+            labels: areaLabels,
+            datasets: [{
+                label: 'Average CFU',
+                data: areaCounts,
+                backgroundColor: '#667eea'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Details - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'bioburden:import_data' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Imports
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h4><i class="fas fa-file-alt"></i> Import Details</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>File Name:</th>
+                        <td>{{ data_import.file_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Upload Date:</th>
+                        <td>{{ data_import.upload_date|date:"Y-m-d H:i:s" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Imported By:</th>
+                        <td>{{ data_import.imported_by|default:"N/A" }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if data_import.status == 'completed' %}
+                                <span class="badge bg-success">✓ Completed</span>
+                            {% elif data_import.status == 'failed' %}
+                                <span class="badge bg-danger">✗ Failed</span>
+                            {% elif data_import.status == 'processing' %}
+                                <span class="badge bg-warning">⟳ Processing</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Records Imported:</th>
+                        <td><strong>{{ data_import.records_imported }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% if errors %}
+        <div class="alert alert-danger mt-3">
+            <h5><i class="fas fa-exclamation-triangle"></i> Errors/Warnings:</h5>
+            <ul class="mb-0">
+                {% for error in errors %}
+                    {% if error %}
+                        <li>{{ error }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if data_import.status == 'completed' %}
+        <div class="alert alert-success mt-3">
+            <i class="fas fa-check-circle"></i> Import completed successfully! 
+            <a href="{% url 'bioburden:data_list' %}" class="alert-link">View imported data</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

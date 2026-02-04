@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistical Summary - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-chart-line"></i> Statistical Summary & Z-Score Analysis</h2>
+    <p class="text-muted">Comprehensive statistical overview of all bioburden data</p>
+</div>
+
+{% if overall_stats %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Tests</h6>
+                <h2 class="text-primary">{{ overall_stats.total_tests }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Mean CFU</h6>
+                <h2 class="text-success">{{ overall_stats.mean }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Std Deviation</h6>
+                <h2 class="text-info">{{ overall_stats.std }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Coef. of Variation</h6>
+                <h2 class="text-warning">{{ overall_stats.cv }}%</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-calculator"></i> Descriptive Statistics</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td><strong>Mean:</strong></td>
+                            <td>{{ overall_stats.mean }}</td>
+                            <td class="text-muted">Average CFU value</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Median:</strong></td>
+                            <td>{{ overall_stats.median }}</td>
+                            <td class="text-muted">Middle value</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Standard Deviation:</strong></td>
+                            <td>{{ overall_stats.std }}</td>
+                            <td class="text-muted">Spread of data</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Variance:</strong></td>
+                            <td>{{ overall_stats.variance }}</td>
+                            <td class="text-muted">Std² (variability)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Minimum:</strong></td>
+                            <td>{{ overall_stats.min }}</td>
+                            <td class="text-muted">Lowest value</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Maximum:</strong></td>
+                            <td>{{ overall_stats.max }}</td>
+                            <td class="text-muted">Highest value</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Range:</strong></td>
+                            <td>{{ overall_stats.range }}</td>
+                            <td class="text-muted">Max - Min</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CV (%):</strong></td>
+                            <td>{{ overall_stats.cv }}%</td>
+                            <td class="text-muted">Relative variability</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Thresholds vs Actual</h5>
+            </div>
+            <div class="card-body">
+                {% if thresholds %}
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td><strong>Alert Level:</strong></td>
+                            <td><span class="badge" style="background-color: #fd7e14;">{{ thresholds.alert_level }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Action Level:</strong></td>
+                            <td><span class="badge" style="background-color: #dc3545;">{{ thresholds.action_level }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Current Mean:</strong></td>
+                            <td><span class="badge bg-primary">{{ overall_stats.mean }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Distance to Alert:</strong></td>
+                            <td>
+                                {% widthratio thresholds.alert_level 1 1 as alert_num %}
+                                {% widthratio overall_stats.mean 1 1 as mean_num %}
+                                {{ alert_num|add:"-"|add:mean_num|floatformat:2 }} CFU
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <canvas id="thresholdChart"></canvas>
+                {% else %}
+                <p class="text-muted">No thresholds defined</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tests with Z-Scores -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-chart-scatter"></i> Recent Tests with Z-Score Analysis</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Lot</th>
+                    <th>Area</th>
+                    <th>CFU Value</th>
+                    <th>Z-Score</th>
+                    <th>Interpretation</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recent_with_z %}
+                <tr {% if item.is_outlier %}class="table-warning"{% endif %}>
+                    <td>{{ item.test.test_date|date:"Y-m-d" }}</td>
+                    <td>
+                        <a href="{% url 'bioburden:lot_detail' item.test.lot.pk %}">
+                            {{ item.test.lot.lot_number }}
+                        </a>
+                    </td>
+                    <td>{{ item.test.area.name }}</td>
+                    <td><strong>{{ item.test.adjusted_cfu|floatformat:2 }}</strong></td>
+                    <td>
+                        <span class="badge {% if item.is_outlier %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {{ item.z_score }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if item.is_outlier %}
+                            <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Outlier</span>
+                        {% elif item.abs_z_score > 1 %}
+                            <span class="text-warning">Above average</span>
+                        {% else %}
+                            <span class="text-success">Normal variation</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ item.test.status }}">
+                            {{ item.test.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h6><i class="fas fa-graduation-cap"></i> Understanding Z-Scores</h6>
+        <p class="mb-2">
+            <strong>Z-Score</strong> measures how many standard deviations a value is from the mean:
+        </p>
+        <ul class="small mb-0">
+            <li><strong>Z = 0:</strong> Exactly at the mean</li>
+            <li><strong>|Z| < 1:</strong> Within 1 std dev (68% of data)</li>
+            <li><strong>|Z| < 2:</strong> Within 2 std dev (95% of data)</li>
+            <li><strong>|Z| > 2:</strong> Outlier (only 5% of data)</li>
+            <li><strong>|Z| > 3:</strong> Extreme outlier (only 0.3% of data)</li>
+        </ul>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> No data available for statistical analysis.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if thresholds and overall_stats %}
+<script>
+    const ctx = document.getElementById('thresholdChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Mean', 'Alert', 'Action'],
+            datasets: [{
+                label: 'CFU Levels',
+                data: [{{ overall_stats.mean }}, {{ thresholds.alert_level }}, {{ thresholds.action_level }}],
+                backgroundColor: ['#667eea', '#fd7e14', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

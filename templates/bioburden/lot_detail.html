@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Lot {{ lot.lot_number }} - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'bioburden:data_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Data
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-box"></i> Lot: {{ lot.lot_number }}</h3>
+                {% if lot.product_name %}
+                    <small>{{ lot.product_name }}</small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>Statistics</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center p-3">
+                                    <h2 class="text-primary">{{ stats.total_tests }}</h2>
+                                    <small class="text-muted">Total Tests</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3">
+                                    <h2 class="text-success">{{ stats.avg_cfu|floatformat:2 }}</h2>
+                                    <small class="text-muted">Average CFU</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3">
+                                    <h2 class="text-warning">{{ stats.alert_count }}</h2>
+                                    <small class="text-muted">Alerts</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3">
+                                    <h2 class="text-danger">{{ stats.action_count }}</h2>
+                                    <small class="text-muted">Actions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        {% if threshold %}
+                        <h5>Fixed Thresholds</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Alert Level:</th>
+                                <td>
+                                    <span class="badge" style="background-color: var(--alert-color);">
+                                        {{ threshold.alert_level }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Action Level:</th>
+                                <td>
+                                    <span class="badge" style="background-color: var(--action-color);">
+                                        {{ threshold.action_level }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                        <a href="{% url 'bioburden:threshold_update' threshold.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> Edit Thresholds
+                        </a>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            No fixed thresholds defined for this lot.
+                            <a href="{% url 'bioburden:threshold_create' %}" class="alert-link">Add thresholds</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="chart-container" style="height: 500px;">
+            <h5><i class="fas fa-chart-line"></i> Bioburden Trend with Thresholds</h5>
+            <canvas id="lotChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tests Table -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-list"></i> All Tests for Lot {{ lot.lot_number }}</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Test Date</th>
+                    <th>Area</th>
+                    <th>Sample ID</th>
+                    <th>CFU Count</th>
+                    <th>Adjusted CFU</th>
+                    <th>Status</th>
+                    <th>Lab</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in tests %}
+                <tr>
+                    <td>{{ test.test_date|date:"Y-m-d" }}</td>
+                    <td>{{ test.area.name }}</td>
+                    <td><small>{{ test.sample_id|default:"-" }}</small></td>
+                    <td>{{ test.cfu_count }}</td>
+                    <td><strong>{{ test.adjusted_cfu|floatformat:2 }}</strong></td>
+                    <td>
+                        <span class="status-badge status-{{ test.status }}">
+                            {{ test.get_status_display }}
+                        </span>
+                    </td>
+                    <td><small>{{ test.lab_name|default:"-" }}</small></td>
+                    <td>
+                        <a href="{% url 'bioburden:data_update' test.pk %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted">No test data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Prepare data for chart
+    const tests = [
+        {% for test in tests %}
+        {
+            date: '{{ test.test_date|date:"Y-m-d" }}',
+            value: {{ test.adjusted_cfu|default:test.cfu_count }},
+            status: '{{ test.status }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Sort by date
+    tests.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const dates = tests.map(t => t.date);
+    const values = tests.map(t => t.value);
+    
+    // Colors based on status
+    const pointColors = tests.map(t => {
+        if (t.status === 'action') return '#dc3545';
+        if (t.status === 'alert') return '#fd7e14';
+        return '#28a745';
+    });
+    
+    const ctx = document.getElementById('lotChart').getContext('2d');
+    
+    const datasets = [{
+        label: 'CFU Value',
+        data: values,
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        pointBackgroundColor: pointColors,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        tension: 0.3
+    }];
+    
+    // Add threshold lines if available
+    {% if threshold %}
+    datasets.push({
+        label: 'Alert Level',
+        data: Array(dates.length).fill({{ threshold.alert_level }}),
+        borderColor: '#fd7e14',
+        borderDash: [5, 5],
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0
+    });
+    
+    datasets.push({
+        label: 'Action Level',
+        data: Array(dates.length).fill({{ threshold.action_level }}),
+        borderColor: '#dc3545',
+        borderDash: [5, 5],
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0
+    });
+    {% endif %}
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'CFU Count'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Test Date'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

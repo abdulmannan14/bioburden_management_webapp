@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Data - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-file-upload"></i> Import Bioburden Data</h2>
+    <p class="text-muted">Upload Excel files to import bioburden test data and fixed thresholds</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Upload Excel File</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.uploaded_file.id_for_label }}" class="form-label">
+                            Excel File (.xlsx, .xls)
+                        </label>
+                        {{ form.uploaded_file }}
+                        <div class="form-text">
+                            Select an Excel file containing bioburden data
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.imported_by.id_for_label }}" class="form-label">
+                            Imported By (Optional)
+                        </label>
+                        {{ form.imported_by }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-upload"></i> Upload & Import
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Expected Format</h5>
+            </div>
+            <div class="card-body">
+                <h6>Bioburden Data Sheet:</h6>
+                <ul class="small">
+                    <li><strong>Lot</strong> - Lot number</li>
+                    <li><strong>Area</strong> - Testing area</li>
+                    <li><strong>Test Date</strong> or <strong>Date</strong> - Test date</li>
+                    <li><strong>CFU</strong> or <strong>CFU Count</strong> - Colony count</li>
+                    <li><strong>Dilution</strong> (optional) - Dilution factor</li>
+                    <li><strong>Sample ID</strong> (optional)</li>
+                    <li><strong>Laboratory</strong> (optional)</li>
+                    <li><strong>Analyst</strong> (optional)</li>
+                </ul>
+                
+                <h6 class="mt-3">Thresholds Sheet (optional):</h6>
+                <ul class="small">
+                    <li><strong>Lot</strong> - Lot number</li>
+                    <li><strong>Alert Level</strong> or <strong>Alert</strong> - Orange threshold</li>
+                    <li><strong>Action Level</strong> or <strong>Action</strong> - Red threshold</li>
+                    <li><strong>Area</strong> (optional)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Imports</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>File</th>
+                            <th>Date</th>
+                            <th>Records</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for import_record in recent_imports %}
+                        <tr>
+                            <td>
+                                <small>{{ import_record.file_name|truncatechars:30 }}</small>
+                            </td>
+                            <td>
+                                <small>{{ import_record.upload_date|date:"Y-m-d H:i" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ import_record.records_imported }}</span>
+                            </td>
+                            <td>
+                                {% if import_record.status == 'completed' %}
+                                    <span class="badge bg-success">✓ Completed</span>
+                                {% elif import_record.status == 'failed' %}
+                                    <span class="badge bg-danger">✗ Failed</span>
+                                {% elif import_record.status == 'processing' %}
+                                    <span class="badge bg-warning">⟳ Processing</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'bioburden:import_detail' import_record.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No imports yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Outlier Analysis - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-chart-scatter"></i> Statistical Outlier Analysis</h2>
+    <p class="text-muted">Identify lots with unusual bioburden patterns using Z-score analysis</p>
+</div>
+
+<div class="alert alert-info">
+    <h6><i class="fas fa-info-circle"></i> About Outlier Detection:</h6>
+    <p class="mb-0">
+        Tests with <strong>|Z-score| > 2</strong> are considered outliers (±2 standard deviations from mean).
+        High outlier percentages may indicate inconsistent testing or contamination issues.
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Outlier Status by Lot</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Lot Number</th>
+                    <th>Mean CFU</th>
+                    <th>Std Dev</th>
+                    <th>Median CFU</th>
+                    <th>Total Samples</th>
+                    <th>Outliers</th>
+                    <th>Outlier %</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in outlier_data %}
+                <tr>
+                    <td>
+                        <a href="{% url 'bioburden:lot_detail' item.lot.pk %}">
+                            <strong>{{ item.lot.lot_number }}</strong>
+                        </a>
+                    </td>
+                    <td>{{ item.mean_cfu }}</td>
+                    <td>{{ item.std_cfu }}</td>
+                    <td>{{ item.median_cfu }}</td>
+                    <td>{{ item.total_samples }}</td>
+                    <td>
+                        {% if item.outlier_count > 0 %}
+                            <span class="badge bg-warning">{{ item.outlier_count }}</span>
+                        {% else %}
+                            <span class="badge bg-success">{{ item.outlier_count }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.outlier_percentage }}%</td>
+                    <td>
+                        <span class="badge bg-{{ item.status_class }}">
+                            {{ item.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        No data available for outlier analysis. Need at least 3 tests per lot.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6><i class="fas fa-chart-pie"></i> Status Distribution</h6>
+                <canvas id="outlierStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle"></i> Interpretation Guide</h6>
+                <ul class="mb-0">
+                    <li><strong>CLEAN (0%):</strong> All samples within normal variation</li>
+                    <li><strong>GOOD (<10%):</strong> Few outliers, generally acceptable</li>
+                    <li><strong>WARNING (≥10%):</strong> High variability, investigate cause</li>
+                </ul>
+                <hr>
+                <small class="text-muted">
+                    <strong>Z-Score:</strong> Number of standard deviations from the mean<br>
+                    <strong>|Z| > 2:</strong> Statistically significant outlier (95% confidence)
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const statusData = {{ outlier_data|safe }};
+    
+    // Count status types
+    const clean = statusData.filter(d => d.outlier_percentage === 0).length;
+    const good = statusData.filter(d => d.outlier_percentage > 0 && d.outlier_percentage < 10).length;
+    const warning = statusData.filter(d => d.outlier_percentage >= 10).length;
+    
+    const ctx = document.getElementById('outlierStatusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Clean', 'Good', 'Warning'],
+            datasets: [{
+                data: [clean, good, warning],
+                backgroundColor: ['#28a745', '#17a2b8', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}CFU Per Area - Bioburden Management{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-chart-area"></i> CFU Analysis by Testing Area</h2>
+    <p class="text-muted">Detailed statistical analysis of bioburden levels across all testing areas</p>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-table"></i> Statistical Summary by Area</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Area</th>
+                    <th>Tests</th>
+                    <th>Mean CFU</th>
+                    <th>Median CFU</th>
+                    <th>Std Dev</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                    <th>Range</th>
+                    <th>25th %ile</th>
+                    <th>75th %ile</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for area in area_analysis %}
+                <tr>
+                    <td><strong>{{ area.area.name }}</strong></td>
+                    <td>{{ area.total_tests }}</td>
+                    <td><span class="badge bg-primary">{{ area.mean_cfu }}</span></td>
+                    <td>{{ area.median_cfu }}</td>
+                    <td>{{ area.std_cfu }}</td>
+                    <td>{{ area.min_cfu }}</td>
+                    <td>{{ area.max_cfu }}</td>
+                    <td>{{ area.range_cfu }}</td>
+                    <td>{{ area.percentile_25 }}</td>
+                    <td>{{ area.percentile_75 }}</td>
+                    <td>
+                        <span class="badge bg-success">{{ area.normal_count }} ✓</span>
+                        {% if area.alert_count > 0 %}
+                            <span class="badge bg-warning">{{ area.alert_count }} ⚠</span>
+                        {% endif %}
+                        {% if area.action_count > 0 %}
+                            <span class="badge bg-danger">{{ area.action_count }} ✗</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="text-center text-muted py-4">
+                        No test data available
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6><i class="fas fa-chart-bar"></i> Mean CFU by Area</h6>
+                <canvas id="meanCFUChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h6><i class="fas fa-chart-line"></i> CFU Range by Area</h6>
+                <canvas id="rangeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h6><i class="fas fa-info-circle"></i> Statistical Definitions</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="small">
+                    <li><strong>Mean:</strong> Average CFU value</li>
+                    <li><strong>Median:</strong> Middle value (50th percentile)</li>
+                    <li><strong>Std Dev:</strong> Standard deviation (variation from mean)</li>
+                    <li><strong>Min/Max:</strong> Lowest and highest CFU values</li>
+                    <li><strong>Range:</strong> Difference between max and min</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="small">
+                    <li><strong>25th Percentile:</strong> 25% of values are below this</li>
+                    <li><strong>75th Percentile:</strong> 75% of values are below this</li>
+                    <li><strong>Status:</strong> Count of normal, alert, and action tests</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const areaData = {{ area_analysis|safe }};
+    
+    // Mean CFU Chart
+    const meanCtx = document.getElementById('meanCFUChart').getContext('2d');
+    new Chart(meanCtx, {
+        type: 'bar',
+        data: {
+            labels: areaData.map(a => a.area.name),
+            datasets: [{
+                label: 'Mean CFU',
+                data: areaData.map(a => a.mean_cfu),
+                backgroundColor: '#667eea'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Range Chart
+    const rangeCtx = document.getElementById('rangeChart').getContext('2d');
+    new Chart(rangeCtx, {
+        type: 'bar',
+        data: {
+            labels: areaData.map(a => a.area.name),
+            datasets: [
+                {
+                    label: 'Min',
+                    data: areaData.map(a => a.min_cfu),
+                    backgroundColor: '#28a745'
+                },
+                {
+                    label: 'Max',
+                    data: areaData.map(a => a.max_cfu),
+                    backgroundColor: '#dc3545'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
